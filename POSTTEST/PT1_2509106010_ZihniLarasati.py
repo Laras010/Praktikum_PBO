@@ -194,3 +194,5 @@ if __name__ == "__main__":
     print(f"Validasi durasi 5 jam : {Lapangan.validasi_durasi(5)}")
     print(f"Validasi durasi 10 jam: {Lapangan.validasi_durasi(10)}")
     Lapangan.ubah_jam_operasional("07.00 - 23.00 WITA")
+
+    

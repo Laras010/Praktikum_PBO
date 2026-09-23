@@ -23,3 +23,5 @@ pembuatan pesanan, penambahan fasilitas, hingga pencetakan struk dan rekapitulas
     -Jalankan perintah berikut:
    ```bash
    python PT1_2509106010_ZihniLarasati.py
+
+   
