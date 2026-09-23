@@ -1,0 +1,76 @@
+class Shop:
+    def __init__(self, name):
+        self.name = name
+
+    def proses_pembelian(self, hero, item):
+        if hero.gold >= item.harga:
+            hero.gold -= item.harga
+            print(f"{self.name} beli {item.name}"
+                  f"({item.harga}, sisa gold {hero.gold})")
+            return True
+        print(f"{self.name} gold {hero.name} tidak cukup untuk {item.name}")
+        return False
+
+class item:
+    def __init__(self, name, harga, bonus_attack=0, bonus_armor=0):
+          self.name = name
+          self.harga = harga
+          self.bonus_attack = bonus_attack
+          self.bonus_armor = bonus_armor
+
+    def __str__(self):
+         return(f"item: {self.nama} | *{self.bonus_attack} attack | *{self.bonus_armor} armor")
+
+class skill:
+    def __init__(self, name, damage, mana_cost):
+        self.name = name
+        self.damage = damage
+        self.mana_cost = mana_cost
+
+class Hero:
+    jumlahHero = 0
+    MAKS_SLOT = 4
+
+    def __init__(self, name, health, mana, armor, attack, gold, list_skill):
+         self.name = name
+         self.health = health
+         self.mana = mana
+         self.armor = armor
+         self.attack = attack
+         self.gold = gold
+         self.list_skill = [skill(name, dmg, mana) for name, dmg, mana in list_skill]
+         self._inventory = []
+         Hero.jumlahHero += 1
+
+    def beli_item(self, shop, item):
+        if len(self._inventory) >= Hero.MAKS_SLOT:
+              print(f"inventory {self.name} dan penuh brok")
+              return
+        if shop.proses_pembelian(self, item):
+             self._inventory.append(item)
+
+
+    def ambil_item(self, item):
+         if len(self._inventory) < Hero.MAKS_SLOT:
+            self._inventory.append(item)
+            print(f"* (self.name) mengambil (item.name)")
+
+    def cast_skill(self, nomor_skill, lawan):
+        skill = self._skills[nomor_skill - 1]
+        if self.mana < skill.mana_cost:
+            print(f"mana (self.name) tidak cukup untuk (skill.name)")
+            return
+        self.mana -= skill.mana_cost
+        lawan.health -= skill.damage
+        print(f"{self.name} memakai {skill.name} ke {lawan.name}")
+        f"sisa health {lawan.name}: {lawan.health}"
+
+brodi = Hero(name="Brodi", health=3000, mana=1000, armor=10, attack=100, gold=4000, list_skill=[("tembak",100,10), ("locat",10,1)])
+shop = Shop("belanja item")
+bod = item("BOD", 3100, bonus_attack=100)
+winter = item("Winter", 2140, bonus_attack=15, bonus_armor=45)
+brodi.cost_skill(1, "estes")
+
+brodi.beli_item(shop, bod)
+brodi.ambil_item(bod)
+print()
