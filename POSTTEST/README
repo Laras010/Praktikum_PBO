@@ -1,0 +1,99 @@
+Posttest 6
+
+Program ini adalah sistem pemesanan lapangan badminton di **GOR Badminton All Round**, dibuat dengan Python. Lewat program ini, pengelola bisa menambahkan lapangan (matras, vinyl, atau parquet), membuat pesanan, menambah fasilitas seperti sewa raket dan beli shuttlecock, mencetak struk, mengonfirmasi pembayaran (customer langsung dikirimi notifikasi), dan melihat rekap pemasukan.
+
+Program ini adalah pengembangan dari posttest sebelumnya, jadi konsep inheritance tetap dipakai: `super().__init__(...)`, atribut unik di tiap subclass, serta atribut protected dan private.
+
+## 1. Class Diagram
+
+Penjelasan Relasi
+Asosiasi: `PemesananJadwal` → `Lapangan`
+Pesanan hanya "menunjuk" ke lapangan yang dipesan lewat atribut `self.lapangan`. Objek lapangannya sudah ada dari luar dan cuma dipinjam untuk menghitung biaya. Jadi pesanan tidak membuat ataupun memiliki lapangan, dan satu lapangan bisa dipesan berkali-kali.
+
+Agregasi: `PengelolaGOR` ◇— `Lapangan`
+`PengelolaGOR` menyimpan daftar lapangan di `self.daftar_lapangan` lewat method `tambah_lapangan()`. Lapangannya dibuat di luar dulu (di program utama), baru dimasukkan ke pengelola. Saya pilih agregasi karena lapangan bisa berdiri sendiri: kalau objek pengelola dihapus, lapangannya tetap ada dan masih bisa dipakai.
+
+Komposisi: `PemesananJadwal` ◆— `StrukPembayaran`
+Struk dibuat langsung di dalam constructor `PemesananJadwal` (`self.struk = StrukPembayaran(...)`). Saya pilih komposisi karena struk tidak ada artinya tanpa pesanannya. Kalau pesanan dihapus, struknya ikut hilang.
+
+bedanya agregasi dan komposisi adala pada agregasi, bagiannya dibuat di luar dan tetap hidup walau "pemiliknya" hilang (contohnya lapangan). Pada komposisi, bagiannya dibuat di dalam dan ikut hilang bersama pemiliknya (contohnya struk).
+
+Selain tiga relasi itu, di diagram juga ada garis pewarisan dari `LapanganMatras`, `LapanganVinyl`, dan `LapanganParquet` ke `Lapangan`. Nama class abstract ditulis miring dan diberi label `«abstract»`.
+
+## 2. Abstraksi
+
+- Abstract class: `Lapangan(ABC)`.
+- Dua abstract method:
+  - `hitung_biaya_tambahan(self, durasi)`
+  - `deskripsi_jenis(self)`
+- Subclass yang mengisi kedua method itu (ada 3):
+ `LapanganMatras`, `LapanganVinyl`, dan `LapanganParquet`.
+- Method konkret yang dipakai bersama semua subclass:
+  - `hitung_total_sewa()` punya alur hitung yang sama untuk semua lapangan: harga × durasi, ditambah biaya sesi sore/malam, lalu memanggil `hitung_biaya_tambahan()` milik masing-masing subclass.
+  - `tampilkan_info()` mencetak satu baris info lapangan dengan memanggil `deskripsi_jenis()`.
+- Bukti abstract class tidak bisa dibuat objeknya: 
+  program mencoba membuat `Lapangan(...)` di dalam `try-except TypeError`
+  
+  dan hasilnya seperti ini:
+```
+[TypeError] Can't instantiate abstract class Lapangan without an implementation for abstract methods 'deskripsi_jenis', 'hitung_biaya_tambahan'
+```
+
+- Inheritance dari posttest sebelumnya masih dipakai:
+ subclass memanggil `super().__init__(...)` dan punya atribut uniknya sendiri (`_ketebalan_matras`, `_jenis_karpet`, `_tipe_kayu`, semuanya protected). Di `Lapangan` sendiri masih ada `_harga` (protected, diakses lewat property) dan `__kontak_pengelola` (private).
+
+## 3. Polimorfisme
+
+Polimorfisme via Pewarisan :
+Method `hitung_biaya_tambahan()` dan `deskripsi_jenis()` di-override oleh tiga subclass, dan masing-masing punya perilaku sendiri:
+- `LapanganMatras`: dapat diskon Rp 10.000 kalau durasinya lebih dari 3 jam.
+- `LapanganVinyl`: ada biaya perawatan Rp 5.000 per jam.
+- `LapanganParquet`: ada biaya perawatan flat Rp 15.000.
+
+Ketiganya dipanggil lewat satu loop (`for lap in [lap1, lap2, lap3]`), dan hasilnya berbeda-beda sesuai jenis lapangannya. `PengelolaGOR.tampilkan_semua_lapangan()` juga memanggil `lap.tampilkan_info()` tanpa perlu mengecek tipe objeknya.
+
+Duck Typing :
+`NotifWhatsApp`, `NotifSMS`, dan `NotifEmail` tidak punya hubungan pewarisan sama sekali, tapi ketiganya punya method `kirim(pesan)`. Fungsi `kirim_notifikasi(daftar_kanal, pesan)` tinggal memanggil `kanal.kirim(pesan)` tanpa peduli kanalnya apa. Fungsi ini dipakai di `PengelolaGOR.konfirmasi_pembayaran()` untuk memberi tahu customer bahwa pesanannya sudah lunas.
+
+Operator Overloading :
+- Di `Lapangan`: `__str__` (supaya objek bisa di-print dengan rapi), `__lt__` (membandingkan harga, jadi `sorted()` dan `max()` bisa langsung dipakai), `__eq__` (membandingkan kode lapangan), dan `__hash__` (supaya objek tetap bisa dipakai di set/dict setelah `__eq__` ditulis ulang).
+- Di `PemesananJadwal`: `__add__` (`p1 + p3` menghasilkan total biaya dua pesanan) dan `__str__`.
+
+Tanpa Anti-Pattern :
+Di program ini tidak ada rantai `if/elif` yang mengecek `type()` atau string jenis lapangan. Setiap objek sudah tahu sendiri cara menghitung dan menampilkan dirinya lewat method masing-masing.
+
+## SOLID
+
+1. OCP (Open/Closed Principle)
+Kalau nanti mau menambah jenis lapangan baru, misalnya `LapanganSemen`, cukup buat subclass baru dari `Lapangan` dan isi dua abstract method-nya. Kode `PengelolaGOR`, `PemesananJadwal`, dan `Lapangan.hitung_total_sewa()` tidak perlu diubah sama sekali. Begitu juga kalau mau menambah kanal notifikasi baru, cukup buat kelas yang punya method `kirim()`.
+
+2. DIP (Dependency Inversion Principle) lewat Dependency Injection
+`PengelolaGOR` tidak membuat kanal notifikasi sendiri, tapi menerimanya dari luar lewat constructor (`PengelolaGOR("Larasati", kanal_notifikasi)`). Dengan begitu, `PengelolaGOR` hanya bergantung pada "apa pun yang punya `kirim()`", bukan pada kelas tertentu seperti `NotifWhatsApp`. Hal serupa berlaku di `PemesananJadwal`, yang bergantung pada `Lapangan` secara umum dan bukan pada `LapanganMatras` atau subclass lainnya.
+
+## Screenshot Output Program
+
+
+> Cara menjalankan: `python main.py`
+
+![alt text](image.png)
+
+**Bukti abstract class tidak bisa dibuat objeknya:**
+
+![alt text](image-1.png)
+
+**Daftar lapangan dan polimorfisme via pewarisan:**
+
+![alt text](image-3.png)
+
+**Struk pemesanan:**
+
+![alt text](image-4.png)
+
+**Pembayaran, duck typing (notifikasi), dan rekap:**
+
+![alt text](image-2.png)
+
+**Operator overloading:**
+
+![alt text](image-5.png)
+
